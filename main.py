@@ -24,15 +24,27 @@ template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
                                autoescape=True)
 
+def get_posts(limit, offset):
+    posts = db.GqlQuery('SELECT * FROM BlogPost \
+                        ORDER BY created DESC \
+                        LIMIT ' + str(limit) + ' OFFSET ' + str(offset))
+    return posts
+
 class BlogPost(db.Model):
-    title = db.StringProperty(required = True)
-    post = db.TextProperty(required = True)
+    title = db.StringProperty()#required = True)
+    post = db.TextProperty()#required = True)
     created = db.DateTimeProperty(auto_now_add = True)
 
 class ViewPostHandler(webapp2.RequestHandler):
     def get(self, id):
-        content = BlogPost.get_by_id(id)
-        self.response.write(content)
+        data = BlogPost()
+        post_id = data.get_by_id(int(id))
+        if not post_id:
+            self.redirect('/blog')
+        else:
+            t = jinja_env.get_template('post.html')
+            content = t.render(title = post_id.title, post = post_id.post)
+            self.response.write(content)
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
@@ -40,10 +52,20 @@ class MainHandler(webapp2.RequestHandler):
 
 class RecentPosts(webapp2.RequestHandler):
     def get(self):
-        posts = db.GqlQuery('SELECT * FROM BlogPost ORDER BY created DESC LIMIT 5')
+        page = self.request.get('page')
+
+        if not page:
+            page = 1
+
+        offset = 0
+        for _ in range(int(page) - 1):
+            offset += 5
+
+
+        posts = get_posts(5, offset)
 
         t = jinja_env.get_template('blog.html')
-        content = t.render(posts = posts)
+        content = t.render(posts = posts, offset = offset, page = int(page))
         self.response.write(content)
 
 class NewPost(webapp2.RequestHandler):
@@ -59,7 +81,8 @@ class NewPost(webapp2.RequestHandler):
         if title and post:
             p = BlogPost(title = title, post = post)
             p.put()
-            self.redirect('/blog')
+            post_re = p.key().id()
+            self.redirect('/blog/' + str(post_re))
         else:
             error = "Please fill out both Title and Post fields."
             self.get(title, post, error)

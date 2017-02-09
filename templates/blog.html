@@ -1,16 +1,19 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Blog
-<form class="newpost" action="/newpost">
-    <input type="submit" value="New Post"/>
-</form>
-</h1>
+<h1>Blog</h1>
 <hr>
 
 {% for item in posts %}
-<div class="post-title">{{item.title}}</div>
-<div class="post-body">{{item.post}}</div>
+<div class="post-title"><a href="/blog/{{item.key().id()}}">{{item.title}}</a></div>
+<pre class="post-body">{{item.post}}</pre>
 {% endfor %}
+
+<hr>
+{% if offset == 0 %}
+<a href="/blog?page={{page + 1}}">Next ></a>
+{% else %}
+<a href="/blog?page={{page - 1}}">< Prev</a> | <a href="/blog?page={{page + 1}}">Next ></a>
+{% endif %}
 
 {% endblock %}
