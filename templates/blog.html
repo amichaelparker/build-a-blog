@@ -10,8 +10,12 @@
 {% endfor %}
 
 <hr>
+<div class="error">{{param_error}}</div>
+
 {% if offset == 0 %}
 <a href="/blog?page={{page + 1}}">Next ></a>
+{% elif total_posts - offset <= 5 %}
+<a href="/blog?page={{page - 1}}">< Prev</a>
 {% else %}
 <a href="/blog?page={{page - 1}}">< Prev</a> | <a href="/blog?page={{page + 1}}">Next ></a>
 {% endif %}

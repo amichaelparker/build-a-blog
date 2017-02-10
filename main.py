@@ -21,8 +21,8 @@ import os
 from google.appengine.ext import db
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
-                               autoescape=True)
+jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
+                               autoescape = True)
 
 def get_posts(limit, offset):
     posts = db.GqlQuery('SELECT * FROM BlogPost \
@@ -31,19 +31,19 @@ def get_posts(limit, offset):
     return posts
 
 class BlogPost(db.Model):
-    title = db.StringProperty()#required = True)
-    post = db.TextProperty()#required = True)
+    title = db.StringProperty(required = True)
+    post = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
 
 class ViewPostHandler(webapp2.RequestHandler):
     def get(self, id):
-        data = BlogPost()
-        post_id = data.get_by_id(int(id))
-        if not post_id:
+        post_data = BlogPost.get_by_id(int(id))
+
+        if not post_data:
             self.redirect('/blog')
         else:
             t = jinja_env.get_template('post.html')
-            content = t.render(title = post_id.title, post = post_id.post)
+            content = t.render(post_title = post_data.title, post_content = post_data.post)
             self.response.write(content)
 
 class MainHandler(webapp2.RequestHandler):
@@ -52,8 +52,8 @@ class MainHandler(webapp2.RequestHandler):
 
 class RecentPosts(webapp2.RequestHandler):
     def get(self):
+        t = jinja_env.get_template('blog.html')
         page = self.request.get('page')
-
         if not page:
             page = 1
 
@@ -61,11 +61,17 @@ class RecentPosts(webapp2.RequestHandler):
         for _ in range(int(page) - 1):
             offset += 5
 
-
         posts = get_posts(5, offset)
+        total_posts = posts.count()
+        param_error = ""
 
-        t = jinja_env.get_template('blog.html')
-        content = t.render(posts = posts, offset = offset, page = int(page))
+        if int(total_posts) - offset <= 0:
+            page = 1
+            posts = get_posts(5, 0)
+            offset = 0
+            param_error = "There are no posts on the entered page number."
+
+        content = t.render(posts = posts, offset = offset, page = int(page), total_posts = int(total_posts), param_error = param_error)
         self.response.write(content)
 
 class NewPost(webapp2.RequestHandler):
@@ -86,6 +92,7 @@ class NewPost(webapp2.RequestHandler):
         else:
             error = "Please fill out both Title and Post fields."
             self.get(title, post, error)
+
 
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
