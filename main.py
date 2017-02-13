@@ -30,25 +30,14 @@ def get_posts(limit, offset):
                         LIMIT ' + str(limit) + ' OFFSET ' + str(offset))
     return posts
 
+class MainHandler(webapp2.RequestHandler):
+    def get(self):
+        self.redirect('/blog')
+
 class BlogPost(db.Model):
     title = db.StringProperty(required = True)
     post = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
-
-class ViewPostHandler(webapp2.RequestHandler):
-    def get(self, id):
-        post_data = BlogPost.get_by_id(int(id))
-
-        if not post_data:
-            self.redirect('/blog')
-        else:
-            t = jinja_env.get_template('post.html')
-            content = t.render(post_title = post_data.title, post_content = post_data.post)
-            self.response.write(content)
-
-class MainHandler(webapp2.RequestHandler):
-    def get(self):
-        self.redirect('/blog')
 
 class RecentPosts(webapp2.RequestHandler):
     def get(self):
@@ -92,6 +81,17 @@ class NewPost(webapp2.RequestHandler):
         else:
             error = "Please fill out both Title and Post fields."
             self.get(title, post, error)
+
+class ViewPostHandler(webapp2.RequestHandler):
+    def get(self, id):
+        post_data = BlogPost.get_by_id(int(id))
+
+        if not post_data:
+            self.redirect('/blog')
+        else:
+            t = jinja_env.get_template('post.html')
+            content = t.render(post_title = post_data.title, post_content = post_data.post)
+            self.response.write(content)
 
 
 app = webapp2.WSGIApplication([
